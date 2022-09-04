@@ -1,5 +1,5 @@
-from typing import Optional, List
-from fastapi import FastAPI, APIRouter, Query
+from typing import Optional, List, Any
+from fastapi import FastAPI, APIRouter, Query, HTTPException
 from pydantic import BaseModel
 from app.schemas import RecipeSearchResults, Recipe, RecipeCreate
 # FastAPI provides a convenience tool to structure the application while preserving the flexibility
@@ -69,13 +69,25 @@ def search_recipes(
 #         return result[0]
     
 # Updated (Recipe response_model below is imported from schema.py file). Defined structure of JSON file
+# @api_router.get("/recipe/{recipe_id}", status_code=200, response_model=Recipe)
+# def fetch_recipe(*, recipe_id:int) -> Any:
+#     """ Fetch a single recipe with its id """
+#     print(recipe_id)
+#     result = [recipe for recipe in RECIPES if recipe["id"] == recipe_id]
+#     if result:
+#         return result[0]
+
+# For error handling part
 @api_router.get("/recipe/{recipe_id}", status_code=200, response_model=Recipe)
-def fetch_recipe(*, recipe_id:int) -> dict:
+def fetch_recipe(*, recipe_id:int) -> Any:
     """ Fetch a single recipe with its id """
-    print(recipe_id)
     result = [recipe for recipe in RECIPES if recipe["id"] == recipe_id]
-    if result:
-        return result[0]
+    if not result:
+        # Notice we RAISE, NOT RETURN Exception, otherwise validation error occurs.
+        raise HTTPException(
+            status_code=404, detail=f"Recipe with id {recipe_id} not found "
+        )
+    return result[0]
 
 @api_router.post("/recipe/", status_code=201, response_model=Recipe)
 def create_recipe(*, recipe_in: RecipeCreate) -> dict:
